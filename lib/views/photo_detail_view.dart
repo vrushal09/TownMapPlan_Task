@@ -3,15 +3,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 import '../models/photo_data.dart';
+import '../services/storage_service.dart';
 
-class PhotoDetailView extends StatelessWidget {
-  final PhotoData photoData;
+class PhotoDetailView extends StatefulWidget {
+  final MediaData mediaData;
 
-  const PhotoDetailView({Key? key, required this.photoData}) : super(key: key);
+  const PhotoDetailView({Key? key, required this.mediaData}) : super(key: key);
+
+  @override
+  State<PhotoDetailView> createState() => _PhotoDetailViewState();
+}
+
+class _PhotoDetailViewState extends State<PhotoDetailView> {
+  VideoPlayerController? _videoController;
+  bool _isVideoInitialized = false;
+  final StorageService _storageService = StorageService();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mediaData.isVideo) {
+      _initializeVideo();
+    }
+  }
+
+  Future<void> _initializeVideo() async {
+    _videoController = VideoPlayerController.file(File(widget.mediaData.mediaPath));
+    await _videoController!.initialize();
+    setState(() {
+      _isVideoInitialized = true;
+    });
+    _videoController!.setLooping(true);
+    _videoController!.play();
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
 
   Future<void> _openGoogleMaps() async {
-    final Uri url = Uri.parse(photoData.googleMapsUrl);
+    final Uri url = Uri.parse(widget.mediaData.googleMapsUrl);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
@@ -24,6 +59,100 @@ class PhotoDetailView extends StatelessWidget {
     final timeFormat = DateFormat('hh:mm a');
     
     return '${dayFormat.format(dateTime)}, ${dateFormat.format(dateTime)}\n${timeFormat.format(dateTime)}';
+  }
+
+  Future<void> _deleteMedia() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange[400],
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Delete Media',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this ${widget.mediaData.isPhoto ? 'photo' : 'video'}?',
+          style: TextStyle(color: Colors.grey[300], fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Delete', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _storageService.deleteMedia(widget.mediaData.mediaPath);
+        if (mounted) {
+          Navigator.pop(context, true); // Return true to indicate deletion
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Media deleted successfully'),
+                ],
+              ),
+              backgroundColor: Colors.green[700],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Failed to delete: $e')),
+                ],
+              ),
+              backgroundColor: Colors.red[700],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -45,23 +174,105 @@ class PhotoDetailView extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white),
+              onPressed: _deleteMedia,
+              tooltip: 'Delete',
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.mediaData.isPhoto ? Icons.photo : Icons.videocam,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.mediaData.isPhoto ? 'Photo' : 'Video',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // Display captured image with hero animation
+          // Display captured media with hero animation
           Expanded(
             child: Hero(
-              tag: 'photo_${photoData.timestamp}',
-              child: InteractiveViewer(
-                child: Center(
-                  child: Image.file(
-                    File(photoData.imagePath),
-                    fit: BoxFit.contain,
-                    cacheWidth: 1920,
-                    cacheHeight: 1080,
-                  ),
-                ),
-              ),
+              tag: 'media_${widget.mediaData.timestamp}',
+              child: widget.mediaData.isPhoto
+                  ? InteractiveViewer(
+                      child: Center(
+                        child: Image.file(
+                          File(widget.mediaData.mediaPath),
+                          fit: BoxFit.contain,
+                          cacheWidth: 1920,
+                          cacheHeight: 1080,
+                        ),
+                      ),
+                    )
+                  : _isVideoInitialized
+                      ? GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_videoController!.value.isPlaying) {
+                                _videoController!.pause();
+                              } else {
+                                _videoController!.play();
+                              }
+                            });
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Center(
+                                child: AspectRatio(
+                                  aspectRatio: _videoController!.value.aspectRatio,
+                                  child: VideoPlayer(_videoController!),
+                                ),
+                              ),
+                              if (!_videoController!.value.isPlaying)
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 48,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        )
+                      : const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
             ),
           ),
           
@@ -117,7 +328,7 @@ class PhotoDetailView extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _formatDateTime(photoData.timestamp),
+                          _formatDateTime(widget.mediaData.timestamp),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -156,11 +367,16 @@ class PhotoDetailView extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.withOpacity(0.15),
+                              Colors.blue.withOpacity(0.05),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Colors.blue.withOpacity(0.3),
-                            width: 1,
+                            color: Colors.blue.withOpacity(0.4),
+                            width: 1.5,
                           ),
                         ),
                         child: Row(
@@ -168,8 +384,17 @@ class PhotoDetailView extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.blue,
+                                gradient: LinearGradient(
+                                  colors: [Colors.blue[600]!, Colors.blue[800]!],
+                                ),
                                 borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
                               child: const Icon(
                                 Icons.location_on,
@@ -188,18 +413,19 @@ class PhotoDetailView extends StatelessWidget {
                                       color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    'Lat: ${photoData.latitude.toStringAsFixed(6)}',
+                                    'Lat: ${widget.mediaData.latitude.toStringAsFixed(6)}',
                                     style: TextStyle(
                                       color: Colors.grey[400],
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
-                                    'Lon: ${photoData.longitude.toStringAsFixed(6)}',
+                                    'Lon: ${widget.mediaData.longitude.toStringAsFixed(6)}',
                                     style: TextStyle(
                                       color: Colors.grey[400],
                                       fontSize: 13,
@@ -208,10 +434,17 @@ class PhotoDetailView extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            Icon(
-                              Icons.open_in_new,
-                              color: Colors.blue[300],
-                              size: 20,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.open_in_new,
+                                color: Colors.blue[300],
+                                size: 20,
+                              ),
                             ),
                           ],
                         ),
