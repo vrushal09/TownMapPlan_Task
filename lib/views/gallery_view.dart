@@ -11,15 +11,43 @@ class GalleryView extends StatefulWidget {
   State<GalleryView> createState() => _GalleryViewState();
 }
 
-class _GalleryViewState extends State<GalleryView> {
+class _GalleryViewState extends State<GalleryView> with SingleTickerProviderStateMixin {
   final StorageService _storageService = StorageService();
   List<MediaData> _mediaList = [];
+  List<MediaData> _filteredMediaList = [];
   bool _isLoading = true;
+  late TabController _tabController;
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+          _filterMedia();
+        });
+      }
+    });
     _loadMedia();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _filterMedia() {
+    if (_currentTabIndex == 0) {
+      _filteredMediaList = _mediaList;
+    } else if (_currentTabIndex == 1) {
+      _filteredMediaList = _mediaList.where((m) => m.isPhoto).toList();
+    } else {
+      _filteredMediaList = _mediaList.where((m) => m.isVideo).toList();
+    }
   }
 
   Future<void> _loadMedia() async {
@@ -31,6 +59,7 @@ class _GalleryViewState extends State<GalleryView> {
       final media = await _storageService.getAllMedia();
       setState(() {
         _mediaList = media;
+        _filterMedia();
         _isLoading = false;
       });
     } catch (e) {
@@ -125,7 +154,7 @@ class _GalleryViewState extends State<GalleryView> {
           ),
         ),
         actions: [
-          if (_mediaList.isNotEmpty)
+          if (_filteredMediaList.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Center(
@@ -136,7 +165,7 @@ class _GalleryViewState extends State<GalleryView> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${_mediaList.length} ${_mediaList.length == 1 ? 'item' : 'items'}',
+                    '${_filteredMediaList.length} ${_filteredMediaList.length == 1 ? 'item' : 'items'}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -148,12 +177,32 @@ class _GalleryViewState extends State<GalleryView> {
               ),
             ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.blue.shade700,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.grey.shade500,
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+          tabs: const [
+            Tab(text: 'All'),
+            Tab(text: 'Photos'),
+            Tab(text: 'Videos'),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Colors.white),
             )
-          : _mediaList.isEmpty
+          : _filteredMediaList.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -201,9 +250,9 @@ class _GalleryViewState extends State<GalleryView> {
                       crossAxisSpacing: 6,
                       mainAxisSpacing: 6,
                     ),
-                    itemCount: _mediaList.length,
+                    itemCount: _filteredMediaList.length,
                     itemBuilder: (context, index) {
-                      final media = _mediaList[index];
+                      final media = _filteredMediaList[index];
                       return GestureDetector(
                         onTap: () async {
                           await Navigator.push(

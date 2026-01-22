@@ -21,6 +21,8 @@ class _CameraViewState extends State<CameraView> implements CameraViewContract {
   bool _isLoading = true;
   String? _errorMessage;
   bool _isRecording = false;
+  int _recordingDuration = 0;
+  DateTime? _recordingStartTime;
 
   @override
   void initState() {
@@ -94,14 +96,19 @@ class _CameraViewState extends State<CameraView> implements CameraViewContract {
   void onVideoRecordingStarted() {
     setState(() {
       _isRecording = true;
+      _recordingStartTime = DateTime.now();
+      _recordingDuration = 0;
     });
     HapticFeedback.mediumImpact();
+    _startTimer();
   }
 
   @override
   void onVideoRecordingStopped(MediaData mediaData) {
     setState(() {
       _isRecording = false;
+      _recordingStartTime = null;
+      _recordingDuration = 0;
     });
     HapticFeedback.lightImpact();
     Navigator.push(
@@ -131,6 +138,27 @@ class _CameraViewState extends State<CameraView> implements CameraViewContract {
     } else {
       await _presenter.startVideoRecording();
     }
+  }
+
+  void _startTimer() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted || !_isRecording) return false;
+      setState(() {
+        _recordingDuration = DateTime.now().difference(_recordingStartTime!).inSeconds;
+      });
+      return _isRecording;
+    });
+  }
+
+  String _formatDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -176,201 +204,215 @@ class _CameraViewState extends State<CameraView> implements CameraViewContract {
                     child: CameraPreview(_presenter.cameraService.controller!),
                   ),
                 
-                // App header
+                // App header - simplified
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   child: Container(
                     padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).padding.top,
+                      top: MediaQuery.of(context).padding.top + 16,
+                      left: 20,
+                      right: 20,
+                      bottom: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withOpacity(0.5),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 40,
-                                  height: 40,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade700,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.map_rounded,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'GPS Camera',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                          const Spacer(),
-                          // Gallery button
-                          FilledButton.tonal(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder: (context, animation, secondaryAnimation) =>
-                                      const GalleryView(),
-                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                    const begin = 0.0;
-                                    const end = 1.0;
-                                    const curve = Curves.easeInOutCubic;
-                                    var tween = Tween(begin: begin, end: end)
-                                        .chain(CurveTween(curve: curve));
-                                    return FadeTransition(
-                                      opacity: animation.drive(tween),
-                                      child: child,
-                                    );
-                                  },
-                                  transitionDuration: const Duration(milliseconds: 300),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 36,
+                                height: 36,
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade700,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.map_rounded,
+                                  color: Colors.white,
+                                  size: 20,
                                 ),
                               );
                             },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              padding: const EdgeInsets.all(12),
-                              minimumSize: Size.zero,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'GPS Camera',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // GPS Status indicator - top right corner
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade700,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.gps_fixed_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'GPS',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Bottom controls area
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 20,
+                      top: 40,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Gallery button
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) =>
+                                    const GalleryView(),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  const begin = 0.0;
+                                  const end = 1.0;
+                                  const curve = Curves.easeInOutCubic;
+                                  var tween = Tween(begin: begin, end: end)
+                                      .chain(CurveTween(curve: curve));
+                                  return FadeTransition(
+                                    opacity: animation.drive(tween),
+                                    child: child,
+                                  );
+                                },
+                                transitionDuration: const Duration(milliseconds: 300),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
                               Icons.photo_library_rounded,
                               color: Colors.white,
-                              size: 22,
+                              size: 28,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
+                        ),
+                        
+                        // Photo capture button (center)
+                        GestureDetector(
+                          onTap: _isRecording ? null : () async {
+                            HapticFeedback.mediumImpact();
+                            await _presenter.capturePhoto();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOutCubic,
+                            width: 80,
+                            height: 80,
                             decoration: BoxDecoration(
-                              color: Colors.green.shade700,
-                              borderRadius: BorderRadius.circular(12),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 4,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.gps_fixed_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'GPS Active',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                              ],
+                            child: Container(
+                              margin: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _isRecording ? Colors.grey.shade600 : Colors.white,
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        
+                        // Video recording button
+                        AnimatedScale(
+                          scale: _isRecording ? 1.1 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOutCubic,
+                          child: GestureDetector(
+                            onTap: _toggleVideoRecording,
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _isRecording ? Colors.red.shade600 : Colors.white.withOpacity(0.2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                              ),
+                              child: Icon(
+                                _isRecording ? Icons.stop_rounded : Icons.videocam_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 
-                // Capture buttons at bottom with Material You flat design
-                Positioned(
-                  bottom: 50,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Video recording button
-                      AnimatedScale(
-                        scale: _isRecording ? 1.1 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOutCubic,
-                        child: GestureDetector(
-                          onTap: _toggleVideoRecording,
-                          child: Container(
-                            width: 65,
-                            height: 65,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _isRecording ? Colors.red.shade600 : Colors.white.withOpacity(0.3),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
-                            ),
-                            child: Icon(
-                              _isRecording ? Icons.stop_rounded : Icons.videocam_rounded,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 50),
-                      
-                      // Photo capture button
-                      GestureDetector(
-                        onTap: _isRecording ? null : () async {
-                          HapticFeedback.mediumImpact();
-                          await _presenter.capturePhoto();
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOutCubic,
-                          width: 85,
-                          height: 85,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 5,
-                            ),
-                          ),
-                          child: Container(
-                            margin: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _isRecording ? Colors.grey.shade600 : Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Recording indicator
+                // Recording indicator with timer
                 if (_isRecording)
                   Positioned(
                     top: 100,
@@ -422,6 +464,16 @@ class _CameraViewState extends State<CameraView> implements CameraViewContract {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _formatDuration(_recordingDuration),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  fontFeatures: [FontFeature.tabularFigures()],
                                 ),
                               ),
                             ],
