@@ -62,6 +62,9 @@ class CameraPresenter {
         timestamp: DateTime.now(),
       );
       
+      // Save GPS metadata to JSON file
+      await storageService.saveMediaMetadata(mediaData);
+      
       view.hideLoading();
       view.onPhotoTaken(mediaData);
     } catch (e) {
@@ -97,6 +100,9 @@ class CameraPresenter {
         longitude: position.longitude,
         timestamp: DateTime.now(),
       );
+      
+      // Save GPS metadata to JSON file
+      await storageService.saveMediaMetadata(mediaData);
       
       view.hideLoading();
       view.onVideoRecordingStopped(mediaData);

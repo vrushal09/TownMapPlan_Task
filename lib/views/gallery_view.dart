@@ -89,19 +89,19 @@ class _GalleryViewState extends State<GalleryView> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.blue.shade700,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.photo_library,
-                color: Colors.blue,
+                Icons.photo_library_rounded,
+                color: Colors.white,
                 size: 20,
               ),
             ),
@@ -111,50 +111,37 @@ class _GalleryViewState extends State<GalleryView> {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
               ),
             ),
           ],
         ),
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white.withOpacity(0.1),
+          ),
         ),
         actions: [
           if (_mediaList.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.only(right: 12),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue[700]!, Colors.blue[900]!],
-                    ),
+                    color: Colors.blue.shade700,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    ],
                   ),
                   child: Text(
                     '${_mediaList.length} ${_mediaList.length == 1 ? 'item' : 'items'}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0,
                     ),
                   ),
                 ),
@@ -174,29 +161,29 @@ class _GalleryViewState extends State<GalleryView> {
                       Container(
                         padding: const EdgeInsets.all(30),
                         decoration: BoxDecoration(
-                          color: Colors.grey[900],
+                          color: Colors.grey.shade800,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.photo_library_outlined,
                           size: 80,
-                          color: Colors.grey[600],
+                          color: Colors.grey.shade500,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'No media yet',
                         style: TextStyle(
-                          color: Colors.grey[400],
+                          color: Colors.grey.shade300,
                           fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         'Capture photos or videos to see them here',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: Colors.grey.shade500,
                           fontSize: 15,
                         ),
                         textAlign: TextAlign.center,
@@ -231,67 +218,46 @@ class _GalleryViewState extends State<GalleryView> {
                         onLongPress: () => _deleteMedia(media),
                         child: Hero(
                           tag: 'media_${media.timestamp}',
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.grey[800]!,
-                                width: 1,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(11),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.file(
-                                    File(media.mediaPath),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[900],
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Colors.grey[600],
-                                          size: 40,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  // Video indicator overlay
-                                  if (media.isVideo)
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.black.withOpacity(0.6),
-                                          ],
-                                        ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.file(
+                                  File(media.mediaPath),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey.shade800,
+                                      child: Icon(
+                                        Icons.broken_image_rounded,
+                                        color: Colors.grey.shade500,
+                                        size: 40,
                                       ),
-                                      child: Align(
-                                        alignment: Alignment.bottomRight,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withOpacity(0.5),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: const Icon(
-                                              Icons.play_circle_filled,
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                          ),
+                                    );
+                                  },
+                                ),
+                                // Video indicator overlay
+                                if (media.isVideo)
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.play_circle_filled_rounded,
+                                          color: Colors.white,
+                                          size: 24,
                                         ),
                                       ),
                                     ),
-                                ],
-                              ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),

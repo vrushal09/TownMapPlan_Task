@@ -65,43 +65,46 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: Colors.grey.shade900,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
         ),
         title: Row(
           children: [
             Icon(
               Icons.warning_amber_rounded,
-              color: Colors.orange[400],
+              color: Colors.orange.shade600,
               size: 28,
             ),
             const SizedBox(width: 12),
             const Text(
               'Delete Media',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to permanently delete this ${widget.mediaData.isPhoto ? 'photo' : 'video'}?',
-          style: TextStyle(color: Colors.grey[300], fontSize: 16),
+          style: TextStyle(color: Colors.grey.shade300, fontSize: 16),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 16),
             ),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text('Delete', style: TextStyle(fontSize: 16)),
@@ -119,15 +122,15 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
             SnackBar(
               content: Row(
                 children: const [
-                  Icon(Icons.check_circle, color: Colors.white),
+                  Icon(Icons.check_circle_rounded, color: Colors.white),
                   SizedBox(width: 8),
                   Text('Media deleted successfully'),
                 ],
               ),
-              backgroundColor: Colors.green[700],
+              backgroundColor: Colors.green.shade700,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
@@ -138,15 +141,15 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error, color: Colors.white),
+                  const Icon(Icons.error_rounded, color: Colors.white),
                   const SizedBox(width: 8),
                   Expanded(child: Text('Failed to delete: $e')),
                 ],
               ),
-              backgroundColor: Colors.red[700],
+              backgroundColor: Colors.red.shade700,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
@@ -161,58 +164,49 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black.withOpacity(0.3),
         elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black.withOpacity(0.5),
           ),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.white),
-              onPressed: _deleteMedia,
-              tooltip: 'Delete',
+          IconButton(
+            icon: const Icon(Icons.delete_rounded, color: Colors.white),
+            onPressed: _deleteMedia,
+            tooltip: 'Delete',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
             ),
           ),
+          const SizedBox(width: 8),
           Container(
-            margin: const EdgeInsets.all(8),
+            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    widget.mediaData.isPhoto ? Icons.photo : Icons.videocam,
+            child: Row(
+              children: [
+                Icon(
+                  widget.mediaData.isPhoto ? Icons.photo_rounded : Icons.videocam_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  widget.mediaData.isPhoto ? 'Photo' : 'Video',
+                  style: const TextStyle(
                     color: Colors.white,
-                    size: 18,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.mediaData.isPhoto ? 'Photo' : 'Video',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -276,7 +270,7 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
             ),
           ),
           
-          // Bottom info card with improved design
+          // Bottom info panel with Material You flat design
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -284,25 +278,11 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
               vertical: 24,
             ),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.grey[900]!,
-                  Colors.grey[850]!,
-                ],
-              ),
+              color: Colors.grey.shade900,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
+                topLeft: Radius.circular(28),
+                topRight: Radius.circular(28),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
             ),
             child: SafeArea(
               top: false,
@@ -316,12 +296,12 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.2),
+                          color: Colors.blue.shade700,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.calendar_today,
-                          color: Colors.blue,
+                          Icons.calendar_today_rounded,
+                          color: Colors.white,
                           size: 20,
                         ),
                       ),
@@ -343,19 +323,11 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                   // Divider
                   Container(
                     height: 1,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.grey.withOpacity(0.5),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+                    color: Colors.grey.shade700,
                   ),
                   const SizedBox(height: 16),
                   
-                  // Location Button with better design
+                  // Location Button with Material You flat design
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -363,20 +335,17 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                         HapticFeedback.lightImpact();
                         _openGoogleMaps();
                       },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
+                      borderRadius: BorderRadius.circular(20),
+                      splashColor: Colors.blue.withOpacity(0.2),
+                      highlightColor: Colors.blue.withOpacity(0.1),
+                      child: Ink(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.blue.withOpacity(0.15),
-                              Colors.blue.withOpacity(0.05),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.blue.shade900.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.blue.withOpacity(0.4),
-                            width: 1.5,
+                            color: Colors.blue.shade700,
+                            width: 1,
                           ),
                         ),
                         child: Row(
@@ -384,20 +353,11 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.blue[600]!, Colors.blue[800]!],
-                                ),
+                                color: Colors.blue.shade700,
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.blue.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
                               ),
                               child: const Icon(
-                                Icons.location_on,
+                                Icons.location_on_rounded,
                                 color: Colors.white,
                                 size: 24,
                               ),
@@ -412,22 +372,22 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.3,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Lat: ${widget.mediaData.latitude.toStringAsFixed(6)}',
                                     style: TextStyle(
-                                      color: Colors.grey[400],
+                                      color: Colors.grey.shade400,
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
                                     'Lon: ${widget.mediaData.longitude.toStringAsFixed(6)}',
                                     style: TextStyle(
-                                      color: Colors.grey[400],
+                                      color: Colors.grey.shade400,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -437,12 +397,12 @@ class _PhotoDetailViewState extends State<PhotoDetailView> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.2),
+                                color: Colors.blue.shade800,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
-                                Icons.open_in_new,
-                                color: Colors.blue[300],
+                                Icons.open_in_new_rounded,
+                                color: Colors.white,
                                 size: 20,
                               ),
                             ),

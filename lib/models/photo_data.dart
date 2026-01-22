@@ -15,6 +15,28 @@ class MediaData {
     required this.timestamp,
   });
 
+  // Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'mediaPath': mediaPath,
+      'mediaType': mediaType == MediaType.photo ? 'photo' : 'video',
+      'latitude': latitude,
+      'longitude': longitude,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+    };
+  }
+
+  // Create from JSON
+  factory MediaData.fromJson(Map<String, dynamic> json) {
+    return MediaData(
+      mediaPath: json['mediaPath'],
+      mediaType: json['mediaType'] == 'photo' ? MediaType.photo : MediaType.video,
+      latitude: json['latitude'],
+      longitude: json['longitude'],
+      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp']),
+    );
+  }
+
   // Format coordinates to 6 decimal places for display
   String get formattedLocation {
     return '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}';
